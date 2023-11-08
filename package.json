@@ -1,0 +1,32 @@
+{
+  "name": "ms-tokenizacion-thales",
+  "version": "0.1.0",
+  "bin": {
+    "ms-tokenizacion-thales": "bin/ms-tokenizacion-thales.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "jest",
+    "cdk": "cdk"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.5",
+    "@types/node": "20.7.1",
+    "@types/node-jose": "^1.1.13",
+    "aws-cdk": "2.104.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1",
+    "ts-node": "^10.9.1",
+    "typescript": "~5.2.2"
+  },
+  "dependencies": {
+    "@aws-sdk/lib-dynamodb": "^3.445.0",
+    "aws-cdk-lib": "2.104.0",
+    "aws-xray-sdk": "^3.5.3",
+    "axios": "^1.6.1",
+    "constructs": "^10.0.0",
+    "node-jose": "^2.2.0",
+    "source-map-support": "^0.5.21"
+  }
+}
