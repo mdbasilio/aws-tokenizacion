@@ -1,4 +1,4 @@
-import * as aws from "aws-sdk";
+import { SSM } from "@aws-sdk/client-ssm";
 import * as yaml from "js-yaml";
 
 export class BuildConfig {
@@ -14,10 +14,10 @@ export class BuildConfig {
         try {
             const nameEnvironmentSsm = `/${this.nameStackApplication}/${this.stage}`;
             console.log(`### Getting config from SSM Parameter store with name: " ${nameEnvironmentSsm} "`);
-            const ssm = new aws.SSM();
+            const ssm = new SSM();
             let ssmResponse: any = await ssm.getParameter({
                 Name: nameEnvironmentSsm
-            }).promise();
+            });
 
             console.log("### ssmResponse.Parameter.value", ssmResponse);
             let unparsedEnv: any = yaml.load(ssmResponse.Parameter.Value);

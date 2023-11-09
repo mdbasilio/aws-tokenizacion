@@ -36,5 +36,7 @@ export const dataDecryption = async (jwe: string) => {
 
     const ecJWK = await keystore.add(privateKey, "pem");
     const result = await jose.JWE.createDecrypt(ecJWK).decrypt(jwe);
-    console.log("Decryption result:", result.plaintext.toString());
+    //console.log("Decryption result:", result.plaintext.toString());
+
+    return JSON.parse(result.plaintext.toString());
 }

@@ -9,6 +9,7 @@ import { createCustomTable } from './custom-table';
 import { createCognitoResources } from './cognito-resources';
 import { createRole } from './iam-role';
 import { createFnConsumerInfo } from './lambda-consumer-info';
+import { createFnVerifyCard } from './lambda-verify-card';
 
 export class MsTokenizacionThalesStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -19,8 +20,8 @@ export class MsTokenizacionThalesStack extends cdk.Stack {
 
     const cardTcTable = createCustomTable(this, 'tcr_m_cards', 'cardId');
     const cardTdTable = createCustomTable(this, 'tde_m_cards', 'cardId');
-    const operationTcTable = createCustomTable(this, 'tcr_t_operacion', 'op_operationId');
-    const operationTdTable = createCustomTable(this, 'tde_t_operacion', 'op_operationId');
+    const operationTcTable = createCustomTable(this, 'tcr_t_operacion', 'operationId');
+    const operationTdTable = createCustomTable(this, 'tde_t_operacion', 'operationId');
     const consumerTable = createCustomTable(this, 'tcd_t_consumidor', 'consumerId');
 
     const userPool = createCognitoResources(this);
@@ -31,6 +32,9 @@ export class MsTokenizacionThalesStack extends cdk.Stack {
     const consumerInfoRole = createRole(this);
     const consumerInfoFn = createFnConsumerInfo(this, envFnConsumerInfo, consumerInfoRole, this.nodejsFunctionProps());
 
+
+    const verifyCardFn = createFnVerifyCard(this, envFnConsumerInfo, consumerInfoRole, this.nodejsFunctionProps());
+
     const lambdaPolicy = new iam.PolicyStatement({
       actions: ['lambda:InvokeFunction'],
       resources: [consumerInfoFn.functionArn],
@@ -38,6 +42,11 @@ export class MsTokenizacionThalesStack extends cdk.Stack {
 
     consumerInfoFn.addToRolePolicy(lambdaPolicy);
     consumerTable.grantReadData(consumerInfoFn);
+
+    //verifyCardFn.addToRolePolicy(lambdaPolicy);
+    cardTcTable.grantWriteData(verifyCardFn);
+    cardTdTable.grantWriteData(verifyCardFn);
+    consumerTable.grantWriteData(verifyCardFn);
 
     const authorizer = new apigateway.CognitoUserPoolsAuthorizer(this, 'SpacesApiAuthorizer', {
       cognitoUserPools: [userPool],
@@ -65,11 +74,37 @@ export class MsTokenizacionThalesStack extends cdk.Stack {
 
     const consumerInfoIntegration = new apigateway.LambdaIntegration(consumerInfoFn);
 
-    const issuersResource = api.root.addResource('issuers');
-    const consumersResource = issuersResource.addResource('{issuerId}');
-    const consumerInfoResource = consumersResource.addResource('consumers/{consumerId}');
+    const verifyCardIntegration = new apigateway.LambdaIntegration(verifyCardFn);
+    //Definir el recurso /cms/api/v1/issuers/{issuerId}/cards/credentials
+    const veridyCardResource = api.root
+      //.addResource('cms')
+      //.addResource('api')
+      //.addResource('v1')
+      .addResource('issuers')
+      .addResource('{issuerId}')
+      .addResource('cards')
+      .addResource('credentials');
+
+    // Definir el recurso /cms/api/v1/issuers/{issuerId}/cards/{cardId}/credentials
+    const credentialsResource = api.root
+      .addResource('issuers')
+      .addResource('{issuerId}')
+      .addResource('cards')
+      .addResource('{cardId}')
+      .addResource('credentials');
+
+
+    const consumerInfoResource = api.root
+      .addResource('issuers')
+      .addResource('{issuerId}')
+      .addResource('consumers/{consumerId}');
+
+
+    veridyCardResource.addMethod('POST', verifyCardIntegration, authorizerWithAuth);
+
     consumerInfoResource.addMethod('GET', consumerInfoIntegration, authorizerWithAuth);
 
+    consumerInfoResource.addMethod('GET', consumerInfoIntegration, authorizerWithAuth);
   }
 
 
