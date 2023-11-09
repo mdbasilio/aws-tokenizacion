@@ -12,6 +12,7 @@
   },
   "devDependencies": {
     "@types/jest": "^29.5.5",
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "20.7.1",
     "@types/node-jose": "^1.1.13",
     "aws-cdk": "2.104.0",
@@ -23,10 +24,13 @@
   "dependencies": {
     "@aws-sdk/lib-dynamodb": "^3.445.0",
     "aws-cdk-lib": "2.104.0",
+    "aws-sdk": "^2.1492.0",
     "aws-xray-sdk": "^3.5.3",
     "axios": "^1.6.1",
     "constructs": "^10.0.0",
+    "joi": "^17.11.0",
     "node-jose": "^2.2.0",
-    "source-map-support": "^0.5.21"
+    "source-map-support": "^0.5.21",
+    "yaml": "^2.3.4"
   }
 }

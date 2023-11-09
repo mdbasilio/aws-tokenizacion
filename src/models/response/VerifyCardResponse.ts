@@ -1,4 +1,4 @@
-export interface VerifyCard {
+export interface VerifyCardResponse {
     cardId: string,
     consumerId: string,
     accountId: string,
