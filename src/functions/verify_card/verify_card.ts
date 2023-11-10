@@ -22,7 +22,7 @@ export const handler = async (event: any) => {
         const requestData: VerifyCardRequest = JSON.parse(event.body || '');
 
         // Valida el objeto VerifyCardRequest con el esquema
-        const { error: requestError, value: validRequestData } = verifyCardReqSchema.validate(requestData);
+        const { error: requestError } = verifyCardReqSchema.validate(requestData);
 
         if (requestError) {
             // La solicitud no cumple con el esquema
@@ -58,7 +58,16 @@ export const handler = async (event: any) => {
             };
         }
 
-        const createdConsumerInfo = await createItem<CardItem>(table, resOcp.body, segment as AWSXRaySDK.Segment);
+        let cardType = "";
+        let createdConsumerInfo: CardItem | null =  null;
+
+        if(cardType == "TC") {
+            createdConsumerInfo = await createItem<CardItem>(table, resOcp.body, segment as AWSXRaySDK.Segment);
+        }
+
+        if(cardType == "TD") {
+            createdConsumerInfo = await createItem<CardItem>(table, resOcp.body, segment as AWSXRaySDK.Segment);
+        }
 
         if (!createdConsumerInfo) {
             console.log("No se pudo crear el registro");

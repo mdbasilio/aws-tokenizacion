@@ -9,7 +9,12 @@ const axiosConfig = {
 };
 
 
-const cardCredentialsOcp = async (url: string, payload: any): Promise<any> => {
+interface Params {
+    claveUnica: string;
+    tipoTarjeta: string;
+}
+
+const cardCredentialsOcp = async (url: string, params: Params): Promise<any> => {
     // Registra el inicio de la solicitud en los registros
     console.log("Inicio Solicitud en OnPremise Card Credentials");
 
@@ -18,10 +23,12 @@ const cardCredentialsOcp = async (url: string, payload: any): Promise<any> => {
         console.log("Petición a URL", url);
 
         // Realiza la solicitud HTTP al servicio externo
-        const response: AxiosResponse<any> = await axios.post(
-            url, 
-            payload, 
-            { ...axiosConfig }
+        const response: AxiosResponse<any> = await axios.get(
+            url,
+            {
+                params,
+                ...axiosConfig
+            }
         );
 
         // Devuelve la respuesta del servicio

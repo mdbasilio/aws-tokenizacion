@@ -5,7 +5,7 @@ const {
 } = AWS_DynamoDBDocumentClient;
 
 import { DynamoDB } from "@aws-sdk/client-dynamodb";
-import * as xray from 'aws-xray-sdk';
+import * as AWSXRaySDK from 'aws-xray-sdk';
 
 const documentClient = DynamoDBDocument.from(new DynamoDB());
 
@@ -16,14 +16,14 @@ const documentClient = DynamoDBDocument.from(new DynamoDB());
  * @template T - El tipo del elemento que se está creando.
  * @param {string} table - El nombre de la tabla en la que se va a crear el elemento.
  * @param {any} item - El elemento que se va a crear en la tabla.
- * @param {xray.Segment} segment - El segmento de AWS X-Ray para la trazabilidad.
+ * @param {AWSXRaySDK.Segment} segment - El segmento de AWS X-Ray para la trazabilidad.
  * @returns {Promise<T | null>} - Una promesa que se resuelve con el elemento creado o null en caso de error.
  * @author Mario Basilio (iRoute)
 */
 export async function createItem<T>(
     table: string,
     item: any,
-    segment: xray.Segment
+    segment: AWSXRaySDK.Segment
 ): Promise<T | null> {
     const subsegment = segment?.addNewSubsegment(`Hit to DynamoDB ${table}`);
 
@@ -54,7 +54,7 @@ export async function createItem<T>(
  * @param {string} table - El nombre de la tabla en la que se va a realizar la búsqueda.
  * @param {string} fieldName - El nombre del campo por el cual se realizará la búsqueda.
  * @param {string} fieldValue - El valor del campo por el cual se realizará la búsqueda.
- * @param {xray.Segment} segment - El segmento de AWS X-Ray para la trazabilidad.
+ * @param {AWSXRaySDK.Segment} segment - El segmento de AWS X-Ray para la trazabilidad.
  * @returns {Promise<T | null>} - Una promesa que se resuelve con el elemento encontrado o null si no se encuentra.
  * @author Mario Basilio (iRoute)
 */
@@ -62,7 +62,7 @@ export async function searchItemByField<T>(
     table: string,
     fieldName: string,
     fieldValue: string,
-    segment: xray.Segment
+    segment: AWSXRaySDK.Segment
 ): Promise<T | null> {
     const subsegment = segment?.addNewSubsegment(`Hit to DynamoDB search ${table}`);
 
@@ -76,7 +76,7 @@ export async function searchItemByField<T>(
     try {
         const response = await documentClient.get(params);
         const data = response.Item as T;
-        return data ? data : null;
+        return data || null;
     } catch (error) {
         console.error(`Error al buscar el registro por ${fieldName}:`, error);
         subsegment?.addError(JSON.stringify(error));

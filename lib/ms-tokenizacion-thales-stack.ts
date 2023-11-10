@@ -29,12 +29,20 @@ export class MsTokenizacionThalesStack extends cdk.Stack {
     const envFnConsumerInfo = {
       CONSUMER_TABLE: consumerTable.tableName,
     };
-    const consumerInfoRole = createRole(this);
-    const consumerInfoFn = createFnConsumerInfo(this, envFnConsumerInfo, consumerInfoRole, this.nodejsFunctionProps());
+    const roleStack = createRole(this);
+    const consumerInfoFn = createFnConsumerInfo(this, envFnConsumerInfo, roleStack, this.nodejsFunctionProps());
 
 
-    const verifyCardFn = createFnVerifyCard(this, envFnConsumerInfo, consumerInfoRole, this.nodejsFunctionProps());
+    const envFnVerifyCard = {
+      CONSUMER_TABLE: consumerTable.tableName,
+    };
+    const verifyCardFn = createFnVerifyCard(this, envFnVerifyCard, roleStack, this.nodejsFunctionProps());
 
+
+    const envFnCardCredentials = {
+      CONSUMER_TABLE: consumerTable.tableName,
+    };
+    const cardCredentialsFn = createFnVerifyCard(this, envFnCardCredentials, roleStack, this.nodejsFunctionProps())
     const lambdaPolicy = new iam.PolicyStatement({
       actions: ['lambda:InvokeFunction'],
       resources: [consumerInfoFn.functionArn],
@@ -43,10 +51,13 @@ export class MsTokenizacionThalesStack extends cdk.Stack {
     consumerInfoFn.addToRolePolicy(lambdaPolicy);
     consumerTable.grantReadData(consumerInfoFn);
 
-    //verifyCardFn.addToRolePolicy(lambdaPolicy);
+
     cardTcTable.grantWriteData(verifyCardFn);
     cardTdTable.grantWriteData(verifyCardFn);
     consumerTable.grantWriteData(verifyCardFn);
+
+    cardTcTable.grantReadData(cardCredentialsFn);
+    cardTdTable.grantReadData(cardCredentialsFn);
 
     const authorizer = new apigateway.CognitoUserPoolsAuthorizer(this, 'SpacesApiAuthorizer', {
       cognitoUserPools: [userPool],
@@ -75,6 +86,9 @@ export class MsTokenizacionThalesStack extends cdk.Stack {
     const consumerInfoIntegration = new apigateway.LambdaIntegration(consumerInfoFn);
 
     const verifyCardIntegration = new apigateway.LambdaIntegration(verifyCardFn);
+
+    const cardCredentialsIntegration = new apigateway.LambdaIntegration(cardCredentialsFn);
+
     //Definir el recurso /cms/api/v1/issuers/{issuerId}/cards/credentials
     const veridyCardResource = api.root
       //.addResource('cms')
@@ -85,6 +99,12 @@ export class MsTokenizacionThalesStack extends cdk.Stack {
       .addResource('cards')
       .addResource('credentials');
 
+
+    const consumerInfoResource = api.root
+      .addResource('issuers')
+      .addResource('{issuerId}')
+      .addResource('consumers/{consumerId}');
+
     // Definir el recurso /cms/api/v1/issuers/{issuerId}/cards/{cardId}/credentials
     const credentialsResource = api.root
       .addResource('issuers')
@@ -94,17 +114,14 @@ export class MsTokenizacionThalesStack extends cdk.Stack {
       .addResource('credentials');
 
 
-    const consumerInfoResource = api.root
-      .addResource('issuers')
-      .addResource('{issuerId}')
-      .addResource('consumers/{consumerId}');
+
 
 
     veridyCardResource.addMethod('POST', verifyCardIntegration, authorizerWithAuth);
 
     consumerInfoResource.addMethod('GET', consumerInfoIntegration, authorizerWithAuth);
 
-    consumerInfoResource.addMethod('GET', consumerInfoIntegration, authorizerWithAuth);
+    credentialsResource.addMethod('GET', cardCredentialsIntegration, authorizerWithAuth);
   }
 
 
