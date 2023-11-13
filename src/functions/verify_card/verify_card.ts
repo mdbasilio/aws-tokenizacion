@@ -1,14 +1,15 @@
 import * as AWSXRay from 'aws-xray-sdk-core';
 import * as AWSXRaySDK from 'aws-xray-sdk';
 import { ValidCard } from "../../models/request/VerifyCardOcpRequest";
-import { VerifyCardRequest } from "../../models/request/VerifyCardRequest";
-import { verifyCardReqSchema } from "../../models/request/verifyCardReqSchema";
-import { VerifyCardResponse } from "../../models/response/VerifyCardResponse";
-import { verifyCardResSchema } from "../../models/response/verifyCardResSchema";
+import { VerifyCardRequest, verifyCardRequestSchema } from "../../models/request/VerifyCardRequest";
+import { VerifyCardResponse, verifyCardResponseSchema } from "../../models/response/VerifyCardResponse";
 import { dataDecryption } from "../../utils/jwe-util";
 import verifyCardOcp from "./verify_card_ocp";
 import { createItem } from '../../data/dynamodb_utils';
 import { CardItem } from '../../models/database/CardItem';
+import { CardType } from '../../models/enums/CardType';
+import { VerifyCardOcpResponse } from '../../models/response/VerifyCardOcpResponse';
+import { ConsumerItem } from '../../models/database/ConsumerItem';
 
 
 export const handler = async (event: any) => {
@@ -22,7 +23,7 @@ export const handler = async (event: any) => {
         const requestData: VerifyCardRequest = JSON.parse(event.body || '');
 
         // Valida el objeto VerifyCardRequest con el esquema
-        const { error: requestError } = verifyCardReqSchema.validate(requestData);
+        const { error: requestError } = verifyCardRequestSchema.validate(requestData);
 
         if (requestError) {
             // La solicitud no cumple con el esquema
@@ -44,32 +45,64 @@ export const handler = async (event: any) => {
         const dataCard: ValidCard = await dataDecryption(encryptedData);
 
         const reqOcp = {
-            cardId: requestData.cardId,
             cardBin: requestData.cardBin,
             ...dataCard
         }
 
         const resOcp = await sendRequestOcp(url_verify, reqOcp, segment as AWSXRaySDK.Segment);
 
-        if(resOcp.statusCode == 500) {
+        if (resOcp.statusCode == 500) {
             console.log("Ocurrió un error en On-Premise");
             return {
                 statusCode: 500
             };
         }
 
-        let cardType = "";
-        let createdConsumerInfo: CardItem | null =  null;
+        let result: VerifyCardOcpResponse = resOcp?.body;
 
-        if(cardType == "TC") {
-            createdConsumerInfo = await createItem<CardItem>(table, resOcp.body, segment as AWSXRaySDK.Segment);
+        const { datosCliente, tipoTarjeta, consumerId, accountId, card } = result.data;
+
+        const cardId = requestData.cardId;
+
+        const card_db: CardItem = {
+            cardId,
+            ca_bin: requestData.cardBin,
+            ca_consumer_id: consumerId,
+            ca_cuenta: accountId,
+            ca_tarjeta: '',
+            ca_fecha_act: '',
+            ca_fecha_ing: ''
         }
 
-        if(cardType == "TD") {
-            createdConsumerInfo = await createItem<CardItem>(table, resOcp.body, segment as AWSXRaySDK.Segment);
+        const client_db: ConsumerItem = {
+            consumerId,
+            cardId,
+            firstName: datosCliente.nombreCliente,
+            lastName: datosCliente.apellidoCliente,
+            dateOfBirth: datosCliente.fechaNacimiento,
+            title: datosCliente.title,
+            email: datosCliente.email,
+            line1: datosCliente.direccion,
+            city: datosCliente.ciudad,
+            countryCode: datosCliente.pais,
+            zipCode: '',
+            phoneNumber: datosCliente.celular
+        };
+
+        let createdCard: CardItem | null = null;
+        let createdConsumerInfo: ConsumerItem | null = null;
+
+        if (tipoTarjeta == CardType.TC) {
+            createdCard = await createItem<CardItem>(table, card_db, segment as AWSXRaySDK.Segment);
+            createdConsumerInfo = await createItem<ConsumerItem>(table, client_db, segment as AWSXRaySDK.Segment);
         }
 
-        if (!createdConsumerInfo) {
+        if (tipoTarjeta == CardType.TD) {
+            createdCard = await createItem<CardItem>(table, card_db, segment as AWSXRaySDK.Segment);
+            createdConsumerInfo = await createItem<ConsumerItem>(table, client_db, segment as AWSXRaySDK.Segment);
+        }
+
+        if (!createdConsumerInfo && !createdCard) {
             console.log("No se pudo crear el registro");
             return {
                 statusCode: 500
@@ -78,25 +111,16 @@ export const handler = async (event: any) => {
 
         // Procesa la solicitud y crea una respuesta 
         const response: VerifyCardResponse = {
-            cardId: 'validCardId',
-            consumerId: 'validConsumerId',
-            accountId: 'validAccountId',
+            cardId: requestData.cardId,
+            consumerId,
+            accountId,
             verificationResults: {
-                securityCode: {
-                    valid: true,
-                    verificationAttemptsExceeded: false,
-                },
-                card: {
-                    lostOrStolen: false,
-                    expired: false,
-                    invalid: false,
-                    fraudSuspect: false,
-                },
+                card
             },
         };
 
         // Valida la respuesta con el esquema
-        const { error: responseError } = verifyCardResSchema.validate(response);
+        const { error: responseError } = verifyCardResponseSchema.validate(response);
 
         if (responseError) {
             // La respuesta generada no cumple con el esquema

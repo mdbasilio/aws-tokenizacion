@@ -1,5 +1,5 @@
 export interface CardItem {
-    card_id: string,
+    cardId: string,
     ca_cuenta: string,
     ca_tarjeta: string,
     ca_bin: string,

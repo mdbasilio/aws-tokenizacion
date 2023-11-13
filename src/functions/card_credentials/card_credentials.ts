@@ -1,9 +1,9 @@
 import * as AWSXRay from 'aws-xray-sdk-core';
 import * as AWSXRaySDK from 'aws-xray-sdk';
 import cardCredentialsOcp from './card_credentials_ocp';
-import { searchItemByField } from '../../data/dynamodb_utils';
-import { CardItem } from '../../models/database/CardItem';
 import { dataEncryption } from '../../utils/jwe-util';
+import { searchCard } from '../../data/card_util';
+import { CardType } from '../../models/enums/CardType';
 
 export const handler = async function (event: any) {
     const segment = AWSXRay.getSegment();
@@ -57,36 +57,30 @@ export const handler = async function (event: any) {
     }
 };
 
-
-enum TipoRegistro {
-    TC = 'TC',
-    TD = 'TD',
-}
-
-const getTipoYClaveUnica = async (cardId: string, segment: AWSXRay.Segment): Promise<{ tipoTarjeta: TipoRegistro, claveUnica: string }> => {
+const getTipoYClaveUnica = async (cardId: string, segment: AWSXRay.Segment): Promise<{ cardType: CardType, claveUnica: string }> => {
     // Buscar en la primera tabla
-    const consumerTc = await consultaTc(cardId, segment);
+    const consumerTc = await searchCardTc(cardId, segment);
     if (consumerTc) {
-        return { tipoTarjeta: TipoRegistro.TC, claveUnica: consumerTc.ca_tarjeta };
+        return { cardType: CardType.TC, claveUnica: consumerTc.ca_tarjeta };
     }
 
     // Buscar en la segunda tabla
-    const consumerTd = await consultaTd(cardId, segment);
+    const consumerTd = await searchCardTd(cardId, segment);
     if (consumerTd) {
-        return { tipoTarjeta: TipoRegistro.TC, claveUnica: consumerTd.ca_tarjeta };
+        return { cardType: CardType.TC, claveUnica: consumerTd.ca_tarjeta };
     }
 
     // Si no se encuentra en ninguna tabla, lanzar una excepción
     throw new Error('Registro no encontrado en ninguna tabla');
 }
 
-const consultaTc = async (cardId: string, segment: AWSXRay.Segment) => {
-    return await searchItemByField<CardItem>(process.env.DYNAMODB_TABLE!, 'cardId', cardId, segment);;
+const searchCardTc = async (cardId: string, segment: AWSXRay.Segment) => {
+    return await searchCard(process.env.DYNAMODB_TABLE!, cardId, segment);
 }
 
 
-const consultaTd = async (cardId: string, segment: AWSXRay.Segment) => {
-    return await searchItemByField<CardItem>(process.env.DYNAMODB_TABLE!, 'cardId', cardId, segment);;
+const searchCardTd = async (cardId: string, segment: AWSXRay.Segment) => {
+    return await searchCard(process.env.DYNAMODB_TABLE!, cardId, segment);
 }
 
 
