@@ -10,13 +10,13 @@ export function createFnNotifyCard(
     environment: any,
     role: Role
 ): NodejsFunction {
-    return new NodejsFunction(stack, `notify_operation`, {
-        functionName: `${stack.stackName}-notify_operation`,
+    return new NodejsFunction(stack, `notify-operation`, {
+        functionName: `${stack.stackName}-notify-operation`,
         environment,
         role,
         memorySize: 1024,
         handler: 'handler',
-        entry: path.join(__dirname, `/../src/functions/notify_card_op/notify_operation.ts`),
+        entry: path.join(__dirname, `/../src/functions/notify-card-op/notify-operation.ts`),
         bundling: {
             minify: false,
             externalModules: ["aws-sdk"],

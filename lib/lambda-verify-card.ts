@@ -1,22 +1,26 @@
 import { Duration, Stack } from 'aws-cdk-lib';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Role } from 'aws-cdk-lib/aws-iam';
-import path = require('path');
 import { Runtime, Tracing } from 'aws-cdk-lib/aws-lambda';
+import { ISubnet, IVpc } from 'aws-cdk-lib/aws-ec2';
+import path = require('path');
 
 
 export function createFnVerifyCard(
     stack: Stack,
     environment: any,
-    role: Role
+    role: Role,
+    vpc: IVpc,
+    subnets: ISubnet[],
+    securityGroup: any
 ): NodejsFunction {
     return new NodejsFunction(stack, `verify_card`, {
-        functionName: `${stack.stackName}-verify_card`,
+        functionName: `${stack.stackName}-verify-card`,
         environment,
         role,
         memorySize: 1024,
         handler: 'handler',
-        entry: path.join(__dirname, `/../src/functions/verify_card/verify_card.ts`),
+        entry: path.join(__dirname, `/../src/functions/verify-card/verify-card.ts`),
         bundling: {
             minify: false,
             externalModules: ["aws-sdk"],
@@ -24,6 +28,9 @@ export function createFnVerifyCard(
         timeout: Duration.seconds(2.5),
         runtime: Runtime.NODEJS_18_X,
         tracing: Tracing.ACTIVE,
-        logRetention: 14
+        logRetention: 14,
+        vpc,
+        vpcSubnets: { subnets },
+        securityGroups: [securityGroup]
     });
 }

@@ -4,7 +4,7 @@ import { ValidCard } from "../../models/request/VerifyCardOcpRequest";
 import { VerifyCardRequest, verifyCardRequestSchema } from "../../models/request/VerifyCardRequest";
 import { VerifyCardResponse, verifyCardResponseSchema } from "../../models/response/VerifyCardResponse";
 import { dataDecryption } from "../../utils/jwe-util";
-import verifyCardOcp from "./verify_card_ocp";
+import verifyCardOcp from "./verify-card-ocp";
 import { createItem } from '../../data/dynamodb_utils';
 import { CardItem } from '../../models/database/CardItem';
 import { CardType } from '../../models/enums/CardType';

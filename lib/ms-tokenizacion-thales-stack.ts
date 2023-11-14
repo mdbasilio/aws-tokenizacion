@@ -1,15 +1,16 @@
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
-import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
-import { NodejsFunctionProps } from 'aws-cdk-lib/aws-lambda-nodejs';
-import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { createCustomTable } from './custom-table';
 import { createCognitoResources } from './cognito-resources';
 import { createRole } from './iam-role';
 import { createFnConsumerInfo } from './lambda-consumer-info';
 import { createFnVerifyCard } from './lambda-verify-card';
+import { ISubnet, IVpc, SecurityGroup, Subnet, Vpc } from 'aws-cdk-lib/aws-ec2';
+import { createFnCardCredentials } from './lambda-card-credentials';
+import { createFnNotifyCard } from './lambda-notify-card';
+import { createFnDeliverOtp } from './lambda-deliver-otp';
 
 export class MsTokenizacionThalesStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -25,8 +26,15 @@ export class MsTokenizacionThalesStack extends cdk.Stack {
     const consumerTable = createCustomTable(this, 'tcd_t_consumidor', 'consumerId');
 
     const userPool = createCognitoResources(this);
-    
+
     const roleStack = createRole(this);
+
+    const vpc = this.createVpcLambda(config);
+    const subnets = this.createExistingSubnet(config);
+
+    const securityGroup = SecurityGroup.fromSecurityGroupId(
+      this, 'securityGroupLambda_1', config.SECURITY_GROUP_DEFAULT
+    );
 
     const envFnVerifyCard = {
       CARD_TC_TABLE: cardTcTable.tableName,
@@ -37,12 +45,12 @@ export class MsTokenizacionThalesStack extends cdk.Stack {
       VERIFY_VERSION: config.VERIFY_VERSION,
       VERIFY_METHOD: config.VERIFY_METHOD
     };
-    const verifyCardFn = createFnVerifyCard(this, envFnVerifyCard, roleStack, this.nodejsFunctionProps());
+    const verifyCardFn = createFnVerifyCard(this, envFnVerifyCard, roleStack, vpc, subnets, securityGroup);
 
     const envFnConsumerInfo = {
       CONSUMER_TABLE: consumerTable.tableName,
     };
-    const consumerInfoFn = createFnConsumerInfo(this, envFnConsumerInfo, roleStack, this.nodejsFunctionProps());
+    const consumerInfoFn = createFnConsumerInfo(this, envFnConsumerInfo, roleStack);
 
     const envFnCardCredentials = {
       CARD_TC_TABLE: cardTcTable.tableName,
@@ -52,19 +60,29 @@ export class MsTokenizacionThalesStack extends cdk.Stack {
       CREDENTIALS_VERSION: config.CREDENTIALS_VERSION,
       CREDENTIALS_METHOD: config.CREDENTIALS_METHOD
     };
-    const cardCredentialsFn = createFnVerifyCard(this, envFnCardCredentials, roleStack, this.nodejsFunctionProps());
-    
+    const cardCredentialsFn = createFnCardCredentials(this, envFnCardCredentials, roleStack, vpc, subnets, securityGroup);
+
     const lambdaPolicy = new iam.PolicyStatement({
       actions: ['lambda:InvokeFunction'],
       resources: [consumerInfoFn.functionArn],
     });
 
-
     const envFnNotifyCard = {
       CONSUMER_TABLE: consumerTable.tableName,
     };
-    const notifyCardFn = createFnVerifyCard(this, envFnNotifyCard, roleStack, this.nodejsFunctionProps());
+    const notifyCardFn = createFnNotifyCard(this, envFnNotifyCard, roleStack);
 
+
+    const envFnDeliverOtp = {
+      MEDIOS_URL: config.MEDIOS_URL,
+      LATINIA_SECRET: config.LATINIA_SECRET,
+      LATINIA_URL: config.LATINIA_URL,
+      NEMONICO: config.NEMONICO,
+      COMPANY: config.COMPANY,
+      CANAL: config.CANAL,
+      MSG_LABEL: config.MSG_LABEL
+    };
+    const deliverOtpFn = createFnDeliverOtp(this, envFnDeliverOtp, roleStack, vpc, subnets, securityGroup);
 
     consumerInfoFn.addToRolePolicy(lambdaPolicy);
     consumerTable.grantReadData(consumerInfoFn);
@@ -112,6 +130,8 @@ export class MsTokenizacionThalesStack extends cdk.Stack {
 
     const notifyCardIntegration = new apigateway.LambdaIntegration(notifyCardFn);
 
+    const delverOtpIntegration = new apigateway.LambdaIntegration(deliverOtpFn);
+
     // Definir el recurso /issuers/{issuerId}/cards/credentials
     const veridyCardResource = api.root
       .addResource('issuers')
@@ -148,31 +168,29 @@ export class MsTokenizacionThalesStack extends cdk.Stack {
       .addResource('notifications');
 
     notifyResource.addMethod('POST', notifyCardIntegration, authorizerWithAuth);
+
+    // Definir el recurso /issuers/{issuerId}/consumers/{consumerId}/otp
+    const deliverResource = api.root
+      .addResource('issuers')
+      .addResource('{issuerId}')
+      .addResource('consumers')
+      .addResource('{consumerId}')
+      .addResource('otp');
+
+    deliverResource.addMethod('POST', delverOtpIntegration, authorizerWithAuth);
+
   }
 
 
-  private createVpcLambda(config: any): ec2.IVpc {
-    return ec2.Vpc.fromVpcAttributes(this, "ExistingVpcLambda", {
+  private createVpcLambda(config: any): IVpc {
+    return Vpc.fromVpcAttributes(this, "ExistingVpcLambda", {
       vpcId: config.VPC_ID,
       availabilityZones: ["us-east-1a", "us-east-1b", "us-east-1c"],
     });
   }
 
-  private createExistingSubnet(config: any): ec2.ISubnet[] {
+  private createExistingSubnet(config: any): ISubnet[] {
     const subnetIdsLambdas = [config.SUBNET_1a, config.SUBNET_1b, config.SUBNET_1c];
-    return subnetIdsLambdas.map((subnetId) => ec2.Subnet.fromSubnetId(this, subnetId, subnetId));
-  }
-
-  private nodejsFunctionProps(): NodejsFunctionProps {
-    return {
-      bundling: {
-        minify: false,
-        externalModules: ["aws-sdk"],
-      },
-      timeout: cdk.Duration.seconds(25),
-      runtime: lambda.Runtime.NODEJS_18_X,
-      tracing: lambda.Tracing.ACTIVE,
-      logRetention: 14,
-    };
+    return subnetIdsLambdas.map((subnetId) => Subnet.fromSubnetId(this, subnetId, subnetId));
   }
 }

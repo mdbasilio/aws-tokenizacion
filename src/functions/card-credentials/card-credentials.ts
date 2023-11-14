@@ -1,6 +1,6 @@
 import * as AWSXRay from 'aws-xray-sdk-core';
 import * as AWSXRaySDK from 'aws-xray-sdk';
-import cardCredentialsOcp from './card_credentials_ocp';
+import cardCredentialsOcp from './card-credentials-ocp';
 import { dataEncryption } from '../../utils/jwe-util';
 import { searchCard } from '../../data/card_util';
 import { CardType } from '../../models/enums/CardType';
