@@ -3,15 +3,17 @@ import { Runtime, Tracing } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Role } from 'aws-cdk-lib/aws-iam';
 import path = require('path');
+import { NotifyCard } from './../config/config.json';
 
+const nameFn = NotifyCard.nombre;
 
-export function createFnNotifyCard(
+const createFnNotifyCard = (
     stack: Stack,
     environment: any,
     role: Role
-): NodejsFunction {
-    return new NodejsFunction(stack, `notify-operation`, {
-        functionName: `${stack.stackName}-notify-operation`,
+): NodejsFunction => {
+    return new NodejsFunction(stack, `${nameFn}`, {
+        functionName: `${stack.stackName}-${nameFn}`,
         environment,
         role,
         memorySize: 1024,
@@ -27,3 +29,6 @@ export function createFnNotifyCard(
         logRetention: 14,
     });
 }
+
+
+export default createFnNotifyCard;

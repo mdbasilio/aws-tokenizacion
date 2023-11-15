@@ -3,15 +3,17 @@ import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Runtime, Tracing } from 'aws-cdk-lib/aws-lambda';
 import { Role } from 'aws-cdk-lib/aws-iam';
 import path = require('path');
+import { ConsumerInformation } from './../config/config.json';
 
+const nameFn = ConsumerInformation.nombre;
 
-export function createFnConsumerInfo(
+const createFnConsumerInfo = (
     stack: Stack,
     environment: any,
     role: Role
-): NodejsFunction {
-    return new NodejsFunction(stack, `consumer-info`, {
-        functionName: `${stack.stackName}-consumer-info`,
+): NodejsFunction => {
+    return new NodejsFunction(stack, `${nameFn}`, {
+        functionName: `${stack.stackName}-${nameFn}`,
         environment,
         role,
         memorySize: 1024,
@@ -27,3 +29,6 @@ export function createFnConsumerInfo(
         logRetention: 14,
     });
 }
+
+
+export default createFnConsumerInfo;

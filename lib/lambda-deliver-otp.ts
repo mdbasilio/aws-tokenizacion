@@ -4,18 +4,21 @@ import { Role } from 'aws-cdk-lib/aws-iam';
 import path = require('path');
 import { Runtime, Tracing } from 'aws-cdk-lib/aws-lambda';
 import { ISubnet, IVpc } from 'aws-cdk-lib/aws-ec2';
+import { DeliverOtp } from './../config/config.json';
 
 
-export function createFnDeliverOtp(
+const nameFn = DeliverOtp.nombre;
+
+const createFnDeliverOtp = (
     stack: Stack,
     environment: any,
     role: Role,
     vpc: IVpc,
     subnets: ISubnet[],
     securityGroup: any
-): NodejsFunction {
-    return new NodejsFunction(stack, `card-credentials`, {
-        functionName: `${stack.stackName}-card-credentials`,
+): NodejsFunction => {
+    return new NodejsFunction(stack, `${nameFn}`, {
+        functionName: `${stack.stackName}-${nameFn}`,
         environment,
         role,
         memorySize: 1024,
@@ -34,3 +37,5 @@ export function createFnDeliverOtp(
         securityGroups: [securityGroup]
     });
 }
+
+export default createFnDeliverOtp;

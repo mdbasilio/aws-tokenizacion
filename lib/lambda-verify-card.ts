@@ -4,18 +4,20 @@ import { Role } from 'aws-cdk-lib/aws-iam';
 import { Runtime, Tracing } from 'aws-cdk-lib/aws-lambda';
 import { ISubnet, IVpc } from 'aws-cdk-lib/aws-ec2';
 import path = require('path');
+import { VerifyCard } from './../config/config.json';
 
+const nameFn = VerifyCard.nombre;
 
-export function createFnVerifyCard(
+const createFnVerifyCard = (
     stack: Stack,
     environment: any,
     role: Role,
     vpc: IVpc,
     subnets: ISubnet[],
     securityGroup: any
-): NodejsFunction {
-    return new NodejsFunction(stack, `verify_card`, {
-        functionName: `${stack.stackName}-verify-card`,
+): NodejsFunction => {
+    return new NodejsFunction(stack, `${nameFn}`, {
+        functionName: `${stack.stackName}-${nameFn}`,
         environment,
         role,
         memorySize: 1024,
@@ -34,3 +36,5 @@ export function createFnVerifyCard(
         securityGroups: [securityGroup]
     });
 }
+
+export default createFnVerifyCard;

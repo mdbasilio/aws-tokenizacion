@@ -1,0 +1,58 @@
+{
+    "VerifyCard": {
+        "nombre": "ms-tarjeta-verificar",
+        "mensajes": {
+            "NOT_FOUND": "no se encontró información de la tarjeta",
+            "ERR_OCP": "no se pudo establecer conexión con Open Shift"
+        }
+    },
+    "ConsumerInformation": {
+        "nombre": "ms-consumidor-informacion",
+        "mensajes": {
+            "NOT_FOUND": "no se encontró información de la tarjeta"
+        }
+    },
+    "CardCredentials": {
+        "nombre": "ms-tarjeta-credenciales",
+        "mensajes": {
+            "NOT_FOUND": "no se encontró información de la tarjeta",
+            "ERR_OCP": "no se pudo establecer conexión con Open Shift"
+        }
+    },
+    "NotifyCard": {
+        "nombre": "ms-tarjeta-notificacion-operacion",
+        "mensajes": {
+            "NOT_FOUND": "no se encontró información de la tarjeta"
+        }
+    },
+    "DeliverOtp": {
+        "nombre": "ms-otp-entrega",
+        "mensajes": {
+            "NOT_FOUND": "no se encontró información de la tarjeta"
+        }
+    },
+    "RenewCard": {
+        "nombre": "ms-tarjeta-renovar",
+        "mensajes": {
+            "NOT_FOUND": "no se encontró información de la tarjeta"
+        }
+    },
+    "DeleteCard": {
+        "nombre": "ms-tarjeta-borrar",
+        "mensajes": {
+            "NOT_FOUND": "no se encontró información de la tarjeta"
+        }
+    },
+    "SuspendCard": {
+        "nombre": "ms-tarjeta-suspender",
+        "mensajes": {
+            "NOT_FOUND": "no se encontró información de la tarjeta"
+        }
+    },
+    "ResumeCard": {
+        "nombre": "ms-tarjeta-resumen",
+        "mensajes": {
+            "NOT_FOUND": "no se encontró información de la tarjeta"
+        }
+    }
+}

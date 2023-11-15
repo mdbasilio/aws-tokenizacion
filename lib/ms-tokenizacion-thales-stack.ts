@@ -2,15 +2,15 @@ import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import * as iam from 'aws-cdk-lib/aws-iam';
+import { ISubnet, IVpc, SecurityGroup, Subnet, Vpc } from 'aws-cdk-lib/aws-ec2';
 import { createCustomTable } from './custom-table';
 import { createCognitoResources } from './cognito-resources';
 import { createRole } from './iam-role';
-import { createFnConsumerInfo } from './lambda-consumer-info';
-import { createFnVerifyCard } from './lambda-verify-card';
-import { ISubnet, IVpc, SecurityGroup, Subnet, Vpc } from 'aws-cdk-lib/aws-ec2';
-import { createFnCardCredentials } from './lambda-card-credentials';
-import { createFnNotifyCard } from './lambda-notify-card';
-import { createFnDeliverOtp } from './lambda-deliver-otp';
+import createFnVerifyCard from './lambda-verify-card';
+import createFnConsumerInfo from './lambda-consumer-info';
+import createFnCardCredentials from './lambda-card-credentials';
+import createFnNotifyCard from './lambda-notify-card';
+import createFnDeliverOtp from './lambda-deliver-otp';
 
 export class MsTokenizacionThalesStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
